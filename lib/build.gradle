@@ -2,6 +2,7 @@
 plugins {
 	// Apply the java-library plugin for API and implementation separation.
 	id 'java'
+	id 'maven-publish'
 	id "de.undercouch.download" version "4.1.1"
 }
 
@@ -9,6 +10,19 @@ repositories {
 	jcenter()
 }
 
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.github.optyfr'
+            artifactId = 'sevenzipjbinding'
+            version = '16.02-2.01'
+
+            from components.java
+        }
+    }
+}
 apply plugin: 'de.undercouch.download'
 def SevenZipJBindingMyVersion = '16.02-2.01beta'
 def SevenZipJBindingVersion = '16.02-2.01'
