@@ -1,0 +1,60 @@
+
+plugins {
+	// Apply the java-library plugin for API and implementation separation.
+	id 'java'
+	id "de.undercouch.download" version "4.1.1"
+}
+
+repositories {
+	jcenter()
+}
+
+apply plugin: 'de.undercouch.download'
+def SevenZipJBindingMyVersion = '16.02-2.01beta'
+def SevenZipJBindingVersion = '16.02-2.01'
+
+task downloadSevenZipJBindingPlatforms(type: Download) {
+	src([
+		'https://github.com/optyfr/sevenzipjbinding/releases/download/'+SevenZipJBindingMyVersion+'/sevenzipjbinding-FreeBSD-amd64.jar',
+		'https://github.com/optyfr/sevenzipjbinding/releases/download/'+SevenZipJBindingMyVersion+'/sevenzipjbinding-FreeBSD-i386.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-linux-armv71/'+SevenZipJBindingVersion+'/sevenzipjbinding-linux-armv71-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-linux-armv6/'+SevenZipJBindingVersion+'/sevenzipjbinding-linux-armv6-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-linux-armv5/'+SevenZipJBindingVersion+'/sevenzipjbinding-linux-armv5-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-linux-arm64/'+SevenZipJBindingVersion+'/sevenzipjbinding-linux-arm64-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-linux-amd64/'+SevenZipJBindingVersion+'/sevenzipjbinding-linux-amd64-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-linux-i386/'+SevenZipJBindingVersion+'/sevenzipjbinding-linux-i386-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-mac-x86_64/'+SevenZipJBindingVersion+'/sevenzipjbinding-mac-x86_64-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-windows-amd64/'+SevenZipJBindingVersion+'/sevenzipjbinding-windows-amd64-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-windows-x86/'+SevenZipJBindingVersion+'/sevenzipjbinding-windows-x86-'+SevenZipJBindingVersion+'.jar',
+		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding/'+SevenZipJBindingVersion+'/sevenzipjbinding-'+SevenZipJBindingVersion+'.jar'
+	])
+	dest "$buildDir/SevenZipJBinding"
+	onlyIfModified true
+}
+
+task SevenZipJBindingPlatforms {
+	dependsOn downloadSevenZipJBindingPlatforms
+}
+
+jar {
+	dependsOn SevenZipJBindingPlatforms
+	def sevenzip_dirs = [] as Set
+	def paths = fileTree(dir: "$buildDir/SevenZipJBinding/")
+	paths.each( {
+		zipTree(it).filter { it.name.endsWith('sevenzipjbinding-lib.properties') }.each { 
+			sevenzip_dirs += java.nio.file.Paths.get(it.path).getParent().getFileName().toString()
+			println java.nio.file.Paths.get(it.path).getParent().getFileName().toString()
+		}
+		from (zipTree(it)) {
+			include '*/**'
+			exclude '*.properties'
+	  	}
+	})
+	def props = new Properties()
+	sevenzip_dirs.eachWithIndex{ item, idx -> props.setProperty('platform.'+(idx+1), item) }
+	def propertyFile = file "$buildDir/sevenzipjbinding-platforms.properties"
+	propertyFile.withWriter { props.store(it, null) }
+	from(propertyFile)
+	from('net')
+	archiveFileName = 'sevenzipjbinding-' + SevenZipJBindingVersion + '.jar'
+}
