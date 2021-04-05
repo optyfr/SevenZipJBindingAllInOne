@@ -10,19 +10,6 @@ repositories {
 	jcenter()
 }
 
-apply plugin: 'maven-publish'
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            groupId = 'com.github.optyfr'
-            artifactId = 'sevenzipjbinding'
-            version = '16.02-2.01'
-
-            from components.java
-        }
-    }
-}
 apply plugin: 'de.undercouch.download'
 def SevenZipJBindingMyVersion = '16.02-2.01beta'
 def SevenZipJBindingVersion = '16.02-2.01'
@@ -72,4 +59,17 @@ jar {
 	from(propertyFile)
 	from('net')
 	archiveFileName = 'sevenzipjbinding-' + SevenZipJBindingVersion + '.jar'
+}
+
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.github.optyfr'
+            artifactId = 'sevenzipjbinding'
+            version = '16.02-2.01'
+            artifact jar
+        }
+    }
 }
