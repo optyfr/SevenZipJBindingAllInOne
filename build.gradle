@@ -28,6 +28,7 @@ task downloadSevenZipJBindingPlatforms(type: Download) {
 		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-windows-x86/'+SevenZipJBindingVersion+'/sevenzipjbinding-windows-x86-'+SevenZipJBindingVersion+'.jar',
 		'https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding/'+SevenZipJBindingVersion+'/sevenzipjbinding-'+SevenZipJBindingVersion+'.jar'
 	])
+	doFirst {mkdir "$buildDir/SevenZipJBinding"}
 	dest "$buildDir/SevenZipJBinding"
 	onlyIfModified true
 }
@@ -36,29 +37,45 @@ task SevenZipJBindingPlatforms {
 	dependsOn downloadSevenZipJBindingPlatforms
 }
 
-jar {
-	dependsOn SevenZipJBindingPlatforms
-	def sevenzip_dirs = [] as Set
-	def paths = fileTree(dir: "$buildDir/SevenZipJBinding/")
-	paths.each( {
-		zipTree(it).filter { it.name.endsWith('sevenzipjbinding-lib.properties') }.each { 
-			sevenzip_dirs += java.nio.file.Paths.get(it.path).getParent().getFileName().toString()
-			println java.nio.file.Paths.get(it.path).getParent().getFileName().toString()
-		}
-		from (zipTree(it)) {
-			include '*/**'
-			exclude '*.properties'
-	  	}
-	})
-	def props = new Properties()
-	sevenzip_dirs.eachWithIndex{ item, idx -> props.setProperty('platform.'+(idx+1), item) }
-	mkdir "$buildDir"
-	def propertyFile = file "$buildDir/sevenzipjbinding-platforms.properties"
-	propertyFile.withWriter { props.store(it, null) }
-	from(propertyFile)
-	from('net')
-	archiveFileName = 'sevenzipjbinding-' + SevenZipJBindingVersion + '.jar'
+task makeProps(dependsOn: downloadSevenZipJBindingPlatforms) {
+	doFirst {
+		def sevenzip_dirs = [] as Set
+		fileTree(dir: "$buildDir/SevenZipJBinding/").each( {
+			zipTree(it).filter { it.name.endsWith('sevenzipjbinding-lib.properties') }.each { 
+				sevenzip_dirs += java.nio.file.Paths.get(it.path).getParent().getFileName().toString()
+			}
+		})
+		def props = new Properties()
+		sevenzip_dirs.eachWithIndex{ item, idx -> props.setProperty('platform.'+(idx+1), item) }
+		def propertyFile = file "$buildDir/sevenzipjbinding-platforms.properties"
+		propertyFile.withWriter { props.store(it, null) }
+	}
 }
+
+task extract(dependsOn: makeProps) {
+	doFirst {
+		fileTree(dir: "$buildDir/SevenZipJBinding/").each({
+			def f = it;
+			copy {
+				from (zipTree(f)) {
+					include '*/**'
+					exclude '*.properties'
+				}
+				into "$buildDir/SevenZipJBinding_expanded"
+			}
+		})
+	}
+}
+
+apply plugin: 'java'
+
+task makeJar(type:Jar, dependsOn: extract) {
+		from "$buildDir/SevenZipJBinding_expanded"
+		from "$buildDir/sevenzipjbinding-platforms.properties"
+		archiveFileName = 'sevenzipjbinding-' + SevenZipJBindingVersion + '.jar'
+}
+
+build.dependsOn makeJar
 
 apply plugin: 'maven-publish'
 
