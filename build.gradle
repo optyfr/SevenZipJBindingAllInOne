@@ -89,12 +89,39 @@ build.dependsOn makeJar
 apply plugin: 'maven-publish'
 
 publishing {
+    repositories {
+        maven {
+            name = "sevenzipjbinding"
+            url = uri("https://maven.pkg.github.com/optyfr/sevenzipjbinding")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
+            }
+        }
+    }
     publications {
-        maven(MavenPublication) {
-            groupId = 'com.github.optyfr'
-            artifactId = 'sevenzipjbinding'
-            version = '16.02-2.01'
+        gpr(MavenPublication) {
+            artifactId = "sevenzipjbindingallinone"
+            groupId= "com.github.optyfr"
             artifact ("$buildDir/libs/sevenzipjbinding-" + SevenZipJBindingVersion + '.jar')
+            version="1.1"
+            pom {
+                name = 'SevenZipJBindingAllInOne'
+                description = 'SevenZipJBinding multi-arch bundle'
+                url = 'https://github.com/optyfr/SevenZipJBindingAllInOne'
+                developers {
+                    developer {
+                        id = 'optyfr'
+                        name = 'optyfr'
+                        email = '17027109+optyfr@users.noreply.github.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/optyfr/SevenZipJBindingAllInOne.git'
+                    developerConnection = 'scm:git:git@github.com:optyfr/SevenZipJBindingAllInOne.git'
+                    url = 'https://github.com/optyfr/SevenZipJBindingAllInOne.git'
+                }
+            }
         }
     }
 }
