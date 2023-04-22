@@ -46,7 +46,12 @@ task makeProps(dependsOn: downloadSevenZipJBindingPlatforms) {
 			}
 		})
 		def props = new Properties()
-		sevenzip_dirs.eachWithIndex{ item, idx -> props.setProperty('platform.'+(idx+1), item) }
+		def gidx = 0;
+		sevenzip_dirs.eachWithIndex{ item, idx -> {
+			props.setProperty('platform.'+(idx+1), item);
+			gidx = idx+1;
+		}}
+		props.setProperty('platform.'+(gidx+1), "Linux-aarch64");
 		def propertyFile = file "$buildDir/sevenzipjbinding-platforms.properties"
 		propertyFile.withWriter { props.store(it, null) }
 	}
@@ -62,6 +67,10 @@ task extract(dependsOn: makeProps) {
 					exclude '*.properties'
 				}
 				into "$buildDir/SevenZipJBinding_expanded"
+			}
+			copy {
+				from "$buildDir/SevenZipJBinding_expanded/Linux-arm64"
+				into "$buildDir/SevenZipJBinding_expanded/Linux-aarch64"
 			}
 		})
 	}
